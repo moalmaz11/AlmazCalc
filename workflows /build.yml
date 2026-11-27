@@ -1,0 +1,44 @@
+name: Build AlmazCalc APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: unzip -o AlmazCalc-OpenSource.zip
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Test & Build APK
+        working-directory: AlmazCalc
+        run: gradle testDebugUnitTest assembleDebug assembleRelease --stacktrace
+
+      - name: Prepare APK files
+        run: |
+          mkdir -p apks
+          cp AlmazCalc/app/build/outputs/apk/release/app-release.apk apks/AlmazCalc-v1.0.0-release.apk
+          cp AlmazCalc/app/build/outputs/apk/debug/app-debug.apk apks/AlmazCalc-v1.0.0-debug.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlmazCalc-APK
+          path: apks/*.apk
+          retention-days: 30
